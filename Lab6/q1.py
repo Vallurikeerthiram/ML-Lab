@@ -7,7 +7,7 @@ This module provides functions to calculate entropy for decision tree constructi
 import numpy as np
 from collections import Counter
 from math import log2
-
+import pandas as pd
 
 def calculate_entropy(labels):
     """
@@ -35,9 +35,8 @@ def calculate_entropy(labels):
     # Calculate entropy
     entropy = 0
     for count in label_counts.values():
-        if count > 0:
-            probability = count / total_count
-            entropy -= probability * log2(probability)
+        probability = count / total_count
+        entropy -= probability * log2(probability)
     
     return entropy
 
@@ -58,28 +57,21 @@ def equal_width_binning(values, num_bins=4):
     list
         List of bin labels for each value
     """
+    values = np.array(values)
     if len(values) == 0:
         return []
     
-    min_val = min(values)
-    max_val = max(values)
+    min_val = np.min(values)
+    max_val = np.max(values)
     
-    # Handle case where all values are the same
     if min_val == max_val:
         return [f"Bin_0"] * len(values)
     
-    bin_width = (max_val - min_val) / num_bins
+    bin_edges = np.linspace(min_val, max_val, num_bins + 1)
+    bin_indices = np.digitize(values, bin_edges, right=False) - 1
+    bin_indices = np.clip(bin_indices, 0, num_bins - 1)
     
-    binned_values = []
-    for value in values:
-        if value == max_val:
-            # Handle edge case where value equals maximum
-            bin_number = num_bins - 1
-        else:
-            bin_number = int((value - min_val) / bin_width)
-        binned_values.append(f"Bin_{bin_number}")
-    
-    return binned_values
+    return [f"Bin_{i}" for i in bin_indices]
 
 
 def entropy_for_continuous_target(target_values, num_bins=4):
@@ -103,51 +95,19 @@ def entropy_for_continuous_target(target_values, num_bins=4):
     return entropy, binned_labels
 
 
-def validate_entropy_calculation():
-    """Validation function to test entropy calculations with known examples."""
-    print("Validating Entropy Calculations:")
-    print("-" * 40)
-    
-    # Test 1: Pure dataset (entropy should be 0)
-    pure_labels = ['A'] * 10
-    pure_entropy = calculate_entropy(pure_labels)
-    print(f"Test 1 - Pure dataset: {pure_entropy:.4f} (Expected: 0.0000)")
-    
-    # Test 2: Balanced binary dataset (entropy should be 1.0)
-    balanced_binary = ['A'] * 5 + ['B'] * 5
-    balanced_entropy = calculate_entropy(balanced_binary)
-    print(f"Test 2 - Balanced binary: {balanced_entropy:.4f} (Expected: 1.0000)")
-    
-    # Test 3: Imbalanced dataset
-    imbalanced = ['A'] * 8 + ['B'] * 2
-    imbalanced_entropy = calculate_entropy(imbalanced)
-    print(f"Test 3 - Imbalanced (80-20): {imbalanced_entropy:.4f}")
-    
-    # Test 4: Four-class balanced
-    four_class = ['A'] * 5 + ['B'] * 5 + ['C'] * 5 + ['D'] * 5
-    four_entropy = calculate_entropy(four_class)
-    print(f"Test 4 - Four-class balanced: {four_entropy:.4f} (Expected: 2.0000)")
-    
-    # Test 5: Empty dataset
-    empty_entropy = calculate_entropy([])
-    print(f"Test 5 - Empty dataset: {empty_entropy:.4f} (Expected: 0.0000)")
-    
-    print("\nBinning Tests:")
-    print("-" * 40)
-    
-    # Test binning
-    continuous_values = [1.0, 2.5, 4.8, 7.2, 9.9, 12.1, 15.3, 18.7, 21.0, 25.0]
-    binned = equal_width_binning(continuous_values, 4)
-    bin_counts = Counter(binned)
-    
-    print(f"Original values: {continuous_values}")
-    print(f"Binned labels: {binned}")
-    print(f"Bin distribution: {dict(bin_counts)}")
-    
-    # Calculate entropy of binned data
-    bin_entropy = calculate_entropy(binned)
-    print(f"Entropy of binned data: {bin_entropy:.4f}")
-
-
 if __name__ == "__main__":
-    validate_entropy_calculation()
+    # Load dataset in main (not inside functions)
+    file_path = r"C:\Users\keert\OneDrive - Amrita vishwa vidyapeetham\Amrita\Sem5\ML\Lab6\rajasthan.xlsx"
+    df = pd.read_excel(file_path)
+
+    # Choose a rainfall column
+    target_column = "JAN_R/F_2018"
+    target_values = df[target_column].dropna().tolist()
+
+    # Call function
+    entropy_val, binned_labels = entropy_for_continuous_target(target_values, num_bins=4)
+
+    # Print results (only in main)
+    print(f"Entropy for {target_column}: {entropy_val:.4f}")
+    print(f"Unique bins distribution: {dict(pd.Series(binned_labels).value_counts())}")
+    
