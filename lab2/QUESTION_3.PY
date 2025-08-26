@@ -1,44 +1,70 @@
-import statistics as stats
+import pandas as pd
+import statistics
+import matplotlib.pyplot as plt
 
-records = [
-    {"dt": "Jul 14, 2020", "mo": "Jul", "dy": "Tue", "p": 1362.15, "c": -2.52},
-    {"dt": "Jul 13, 2020", "mo": "Jul", "dy": "Mon", "p": 1397.35, "c": -0.26},
-    {"dt": "Jul 10, 2020", "mo": "Jul", "dy": "Fri", "p": 1400.95, "c": 1.15},
-    {"dt": "Jul 09, 2020", "mo": "Jul", "dy": "Thu", "p": 1385.05, "c": -0.36},
-    {"dt": "Jul 08, 2020", "mo": "Jul", "dy": "Wed", "p": 1390.10, "c": -0.52},
-    {"dt": "Jul 07, 2020", "mo": "Jul", "dy": "Tue", "p": 1397.40, "c": -0.24},
-    {"dt": "Jul 06, 2020", "mo": "Jul", "dy": "Mon", "p": 1400.75, "c": -0.31},
-    {"dt": "Jul 03, 2020", "mo": "Jul", "dy": "Fri", "p": 1405.10, "c": -0.51},
-    {"dt": "Jul 02, 2020", "mo": "Jul", "dy": "Thu", "p": 1412.35, "c": 3.62},
-    {"dt": "Jul 01, 2020", "mo": "Jul", "dy": "Wed", "p": 1363.05, "c": 0.32},
-]
+def load_stock_data(filepath, sheet_name="IRCTC Stock Price"):
+    return pd.read_excel(filepath, sheet_name=sheet_name)
 
-vals = [r["p"] for r in records]
-diffs = [r["c"] for r in records]
+def mean_variance_price(df):
+    prices = df.iloc[:, 3].dropna().astype(float)  # Column D = 4th column
+    return statistics.mean(prices), statistics.variance(prices)
 
-mean_val = stats.mean(vals)
-var_val = stats.variance(vals)
-print(f"Mean: {mean_val:.2f}, Variance: {var_val:.2f}")
+def wednesday_mean(df):
+    df["Date"] = pd.to_datetime(df.iloc[:, 0])  # assuming 1st col is Date
+    wed_prices = df[df["Date"].dt.day_name() == "Wednesday"].iloc[:, 3].astype(float)
+    return statistics.mean(wed_prices)
 
-wed_vals = [r["p"] for r in records if r["dy"] == "Wed"]
-mean_wed = stats.mean(wed_vals)
-print(f"\nWed Mean: {mean_wed:.2f} | Diff: {mean_wed - mean_val:.2f}")
+def april_mean(df):
+    df["Date"] = pd.to_datetime(df.iloc[:, 0])
+    april_prices = df[df["Date"].dt.month == 4].iloc[:, 3].astype(float)
+    return statistics.mean(april_prices)
 
-apr_vals = [r["p"] for r in records if r["mo"] == "Apr"]
-if apr_vals:
-    mean_apr = stats.mean(apr_vals)
-    print(f"\nApril Mean: {mean_apr:.2f} | Diff: {mean_apr - mean_val:.2f}")
-else:
-    print("\nNo April records.")
+def loss_probability(df):
+    chg = df.iloc[:, 8].astype(float)  # Chg% in column I (9th col)
+    return (chg < 0).mean()
 
-loss = len([c for c in diffs if c < 0]) / len(records)
-print(f"\nLoss Chance: {loss:.2%}")
+def profit_wednesday_probability(df):
+    df["Date"] = pd.to_datetime(df.iloc[:, 0])
+    chg = df.iloc[:, 8].astype(float)
+    wed_chg = chg[df["Date"].dt.day_name() == "Wednesday"]
+    return (wed_chg > 0).mean()
 
-wed_changes = [r["c"] for r in records if r["dy"] == "Wed"]
-wed_profit = len([c for c in wed_changes if c > 0]) / len(wed_changes)
-print(f"\nProfit on Wed: {wed_profit:.2%}")
-print(f"Conditional Profit|Wed: {wed_profit:.2%}")
+def conditional_profit_probability(df):
+    # P(Profit | Wednesday) = (Profit ∩ Wednesday) / P(Wednesday)
+    df["Date"] = pd.to_datetime(df.iloc[:, 0])
+    chg = df.iloc[:, 8].astype(float)
 
-print("\nDay : Change%")
-for r in records:
-    print(f"{r['dy']:>3} : {r['c']:>6.2f}%")
+    wed_mask = df["Date"].dt.day_name() == "Wednesday"
+    profit_mask = chg > 0
+
+    joint = (wed_mask & profit_mask).sum()
+    wed_total = wed_mask.sum()
+
+    return joint / wed_total if wed_total > 0 else 0
+
+def scatter_chg_weekday(df):
+    df["Date"] = pd.to_datetime(df.iloc[:, 0])
+    df["Weekday"] = df["Date"].dt.day_name()
+    chg = df.iloc[:, 8].astype(float)
+
+    plt.figure(figsize=(8,5))
+    plt.scatter(df["Weekday"], chg)
+    plt.xlabel("Day of Week")
+    plt.ylabel("Chg%")
+    plt.title("Chg% vs Day of Week")
+    plt.show()
+
+# ------------------ MAIN ------------------
+if __name__ == "__main__":
+    df = load_stock_data(r"C:\Users\keert\OneDrive - Amrita vishwa vidyapeetham\Amrita\Sem5\ML\lab2\Lab Session Data.xlsx")
+
+    mean_val, var_val = mean_variance_price(df)
+    print("Mean Price:", mean_val, "Variance:", var_val)
+
+    print("Wednesday Mean:", wednesday_mean(df))
+    print("April Mean:", april_mean(df))
+    print("Loss Probability:", loss_probability(df))
+    print("Profit on Wednesday Probability:", profit_wednesday_probability(df))
+    print("Conditional Profit | Wednesday:", conditional_profit_probability(df))
+
+    scatter_chg_weekday(df)
