@@ -1,45 +1,40 @@
+import pandas as pd
 import numpy as np
 
-data_matrix = np.array([
-    [20, 6, 2],
-    [16, 3, 6],
-    [27, 6, 2],
-    [19, 1, 2],
-    [24, 4, 2],
-    [22, 1, 5],
-    [15, 4, 2],
-    [18, 4, 2],
-    [21, 1, 4],
-    [16, 2, 4]
-])
+def load_data(filepath, sheet_name="Purchase data"):
+    # Read Excel
+    df = pd.read_excel(filepath, sheet_name=sheet_name)
 
-total_paid = np.array([
-    [386],
-    [289],
-    [393],
-    [110],
-    [280],
-    [167],
-    [271],
-    [274],
-    [148],
-    [198]
-])
+    # Drop first column (Customer IDs)
+    df = df.drop(df.columns[0], axis=1)
 
-features = data_matrix.shape[1]
-customers = data_matrix.shape[0]
+    # Convert everything to numeric
+    df = df.apply(pd.to_numeric, errors="coerce").fillna(0)
 
-U1, S1, V1 = np.linalg.svd(data_matrix)
-true_rank = sum(val > 1e-10 for val in S1)
+    # Separate into A (all but last column) and C (last column)
+    A = df.iloc[:, :-1].values.astype(float)
+    C = df.iloc[:, -1].values.astype(float)
 
-pinv_data = np.linalg.pinv(data_matrix)
-item_prices = pinv_data @ total_paid
+    return A, C
 
-print("---- RESULTS ----")
-print(f"Dimensionality of vector space : {features}")
-print(f"Number of vectors              : {customers}")
-print(f"Rank of Matrix A               : {true_rank}")
-print("\nEstimated cost of each product:")
-print(f"Cost of 1 Candy       : Rs {item_prices[0][0]:.2f}")
-print(f"Cost of 1 Kg Mango    : Rs {item_prices[1][0]:.2f}")
-print(f"Cost of 1 Milk Packet : Rs {item_prices[2][0]:.2f}")
+def get_dimensionality(A):
+    return A.shape[1]   # number of columns = 3 (Candies, Mangoes, Milk)
+
+def get_num_vectors(A):
+    return A.shape[0]   # number of rows = 10 (customers)
+
+def get_rank(A):
+    return np.linalg.matrix_rank(A)
+
+def get_product_cost(A, C):
+    return np.linalg.pinv(A).dot(C)   # pseudo-inverse solution
+
+# ------------------ Example Usage ------------------
+if __name__ == "__main__":
+    A, C = load_data(r"C:\Users\keert\OneDrive - Amrita vishwa vidyapeetham\Amrita\Sem5\ML\lab2\Lab Session Data.xlsx", 
+                     sheet_name="Purchase data")
+
+    print("Dimensionality:", get_dimensionality(A))
+    print("Number of vectors:", get_num_vectors(A))
+    print("Rank of A:", get_rank(A))
+    print("Cost per product (Candy, Mango, Milk):", get_product_cost(A, C))
