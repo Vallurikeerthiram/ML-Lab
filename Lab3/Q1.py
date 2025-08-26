@@ -4,7 +4,7 @@ from numpy.linalg import norm
 import matplotlib.pyplot as plt
 
 def load_and_filter_data(file_path, class_column, feature_column, class1, class2):
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, encoding="latin1")
     df = df[[class_column, feature_column]].dropna()
     data1 = df[df[class_column] == class1][feature_column].values
     data2 = df[df[class_column] == class2][feature_column].values
@@ -28,10 +28,10 @@ def plot_class_distributions(data1, data2, class1, class2, feature_column):
 
 # Main execution
 file_path = "Atal_Jal_Disclosed_Ground_Water_Level-2015-2022.csv"
-class_column = 'State Name'
-feature_column = 'GWL (in Mtr)'
-class1 = 'Maharashtra'
-class2 = 'Karnataka'
+class_column = 'State_Name_With_LGD_Code'
+feature_column = 'Pre-monsoon_2018 (meters below ground level)'
+class1 = 'Gujarat_24'
+class2 = 'Haryana_6'
 
 data1, data2 = load_and_filter_data(file_path, class_column, feature_column, class1, class2)
 centroid1, spread1 = calculate_centroid_and_spread(data1)
