@@ -3,8 +3,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # ---------------------- DATA LOADER ---------------------- #
@@ -33,8 +31,6 @@ if __name__ == "__main__":
         "Linear Regression": LinearRegression(),
         "KNN Regressor": KNeighborsRegressor(n_neighbors=5),
         "Decision Tree Regressor": DecisionTreeRegressor(random_state=42),
-        "Random Forest Regressor": RandomForestRegressor(random_state=42, n_estimators=100),
-        "SVR": SVR(kernel="rbf")
     }
 
     results = {}
@@ -45,3 +41,4 @@ if __name__ == "__main__":
     print("\n📊 Regression Results on Alwar.xlsx\n")
     print(results_df)
     results_df.to_excel("regression_results.xlsx", index=True)  # Save results if needed
+
